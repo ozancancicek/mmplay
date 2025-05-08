@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slot Machine with Bonus Wheel & Confetti</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: url('background.png') no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 100vw;
+      padding: 10px;
+    }
+
+    .logo {
+      width: 50vw;
+      max-width: 300px;
+      margin-bottom: 20px;
+    }
+
+    .machine-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    .machine {
+      display: flex;
+      justify-content: center;
+      margin: 10px auto;
+      position: relative;
+      z-index: 2;
+      max-width: 100%;
+    }
+
+    .win-line {
+      position: absolute;
+      height: 4px;
+      width: 90%;
+      background: gold;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      border-radius: 4px;
+      display: none;
+      box-shadow: 0 0 20px 5px gold;
+    }
+
+    .reel {
+      width: 18vw;
+      max-width: 100px;
+      height: 18vw;
+      max-height: 100px;
+      overflow: hidden;
+      margin: 0 1vw;
+      background-color: rgba(0, 0, 0, 0.7);
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.7);
+      position: relative;
+    }
+
+    .strip {
+      position: absolute;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .symbol {
+      width: 100%;
+      max-width: 100px;
+      height: auto;
+      margin: 0;
+      object-fit: contain;
+    }
+
+    .spin {
+      animation: scroll 6s linear infinite;
+    }
+
+    .fast-spin {
+      animation: scroll-fast 0.3s linear infinite;
+    }
+
+    .shake {
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-50%); }
+    }
+
+    @keyframes scroll-fast {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-100%); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-2px); }
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background-color: gold;
+      color: #333;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+
+    .bonus-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 80vw;
+      max-width: 300px;
+      height: 80vw;
+      max-height: 300px;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wheel-frame, .wheel-spin {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .wheel-spin {
+      z-index: 1;
+      animation: none;
+    }
+
+    .wheel-frame {
+      z-index: 2;
+    }
+
+    @keyframes bonusSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(1440deg); }
+    }
+
+    .countdown {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12vw;
+      font-weight: bold;
+      color: gold;
+      z-index: 2000;
+      display: none;
+      text-shadow: 2px 2px 0 black, -2px -2px 0 black, 2px -2px 0 black, -2px 2px 0 black;
+    }
+
+    .congrats {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 7vw;
+      font-weight: bold;
+      color: gold;
+      z-index: 2000;
+      display: none;
+      text-shadow: 3px 3px 0 black, -3px -3px 0 black, 3px -3px 0 black, -3px 3px 0 black;
+      text-align: center;
+    }
+
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      background-color: #4CAF50;
+      opacity: 0.9;
+      z-index: 3000;
+      pointer-events: none;
+      animation: confetti-fall 2s linear forwards;
+      transform: rotate(45deg);
+      border-radius: 2px;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <img src="logo.png" class="logo" alt="Slot Logo">
+  <div class="machine-wrapper">
+    <div class="win-line" id="winLine"></div>
+    <div class="machine" id="machine"></div>
+  </div>
+  <button id="spinBtn" onclick="spin()">Spin!</button>
+  <div class="bonus-container" id="bonusWheelContainer">
+    <img src="wheelframe.png" class="wheel-frame" alt="Wheel Frame">
+    <img src="wheelspin.png" class="wheel-spin" id="wheelSpin" alt="Spinning Wheel">
+  </div>
+  <div class="countdown" id="countdown">3</div>
+  <div class="congrats" id="congratsText">Congratulations!</div>
+</div>
+
+<script>
+  const normalImages = ['1.png', '2.png', '3.png', '4.png', '5.png'];
+  const blurredImages = ['b1.png', 'b2.png', 'b3.png', 'b4.png', 'b5.png'];
+  const machine = document.getElementById('machine');
+  const spinBtn = document.getElementById('spinBtn');
+  const winLine = document.getElementById('winLine');
+  const bonusWheelContainer = document.getElementById('bonusWheelContainer');
+  const wheelSpin = document.getElementById('wheelSpin');
+  const countdown = document.getElementById('countdown');
+  const congratsText = document.getElementById('congratsText');
+  const reelCount = 5;
+  const stripHeight = 8;
+  let reels = [], spinCount = 0;
+
+  function getRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function setupInitialSpin() {
+    machine.innerHTML = '';
+    reels = [];
+    winLine.style.display = 'none';
+    congratsText.style.display = 'none';
+
+    for (let i = 0; i < reelCount; i++) {
+      const reel = document.createElement('div');
+      reel.className = 'reel';
+      const strip = document.createElement('div');
+      strip.className = 'strip spin';
+      for (let j = 0; j < normalImages.length * 3; j++) {
+        const img = document.createElement('img');
+        img.className = 'symbol';
+        img.src = getRandom(normalImages);
+        strip.appendChild(img);
+      }
+      reel.appendChild(strip);
+      machine.appendChild(reel);
+      reels.push({ reel, strip });
+    }
+  }
+
+  function spin() {
+    spinCount++;
+    spinBtn.disabled = true;
+    const isJackpot = spinCount % 5 === 0;
+    const jackpotImage = getRandom(normalImages);
+    reels.forEach(({ strip }, i) => {
+      strip.classList.remove('spin');
+      strip.classList.add('fast-spin');
+      strip.innerHTML = '';
+      for (let j = 0; j < blurredImages.length * 3; j++) {
+        const img = document.createElement('img');
+        img.className = 'symbol';
+        img.src = getRandom(blurredImages);
+        strip.appendChild(img);
+      }
+      setTimeout(() => {
+        strip.classList.remove('fast-spin');
+        strip.style.animation = 'none';
+        strip.innerHTML = '';
+        const finalImage = isJackpot ? jackpotImage : getRandom(normalImages);
+        for (let j = 0; j < stripHeight; j++) {
+          const img = document.createElement('img');
+          img.className = 'symbol';
+          img.src = finalImage;
+          strip.appendChild(img);
+        }
+        strip.classList.add('shake');
+        setTimeout(() => strip.classList.remove('shake'), 300);
+        if (i === reels.length - 1) {
+          if (isJackpot) {
+            winLine.style.display = 'block';
+            setTimeout(() => countdownAndSpinBonusWheel(), 1000);
+          } else {
+            setTimeout(() => {
+              setupInitialSpin();
+              spinBtn.disabled = false;
+            }, 3000);
+          }
+        }
+      }, 1000 + i * 500);
+    });
+  }
+
+  function countdownAndSpinBonusWheel() {
+    let count = 3;
+    countdown.style.display = 'block';
+    countdown.innerText = count;
+    const interval = setInterval(() => {
+      count--;
+      if (count === 0) {
+        clearInterval(interval);
+        countdown.style.display = 'none';
+        showBonusWheel();
+      } else {
+        countdown.innerText = count;
+      }
+    }, 1000);
+  }
+
+  function showBonusWheel() {
+    bonusWheelContainer.style.display = 'flex';
+    wheelSpin.style.animation = 'bonusSpin 4s ease-out forwards';
+    setTimeout(() => {
+      congratsText.style.display = 'block';
+      launchConfettiLeafBurst();
+    }, 4000);
+    setTimeout(() => {
+      bonusWheelContainer.style.display = 'none';
+      wheelSpin.style.animation = 'none';
+      congratsText.style.display = 'none';
+      setupInitialSpin();
+      spinBtn.disabled = false;
+    }, 9000);
+  }
+
+  function launchConfettiLeafBurst() {
+    const total = 60;
+    for (let i = 0; i < total; i++) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti-piece';
+      confetti.style.left = `${Math.random() * 100}vw`;
+      confetti.style.top = `${Math.random() * 10}vh`;
+      confetti.style.backgroundColor = ['#4CAF50', '#66BB6A', '#81C784'][Math.floor(Math.random() * 3)];
+      confetti.style.animationDuration = `${1.5 + Math.random()}s`;
+      confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+      document.body.appendChild(confetti);
+      setTimeout(() => confetti.remove(), 3000);
+    }
+  }
+
+  setupInitialSpin();
+</script>
+</body>
+</html>
